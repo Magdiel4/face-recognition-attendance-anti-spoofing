@@ -66,8 +66,8 @@ def attendance(id, name):
     now = datetime.datetime.now()
     dtString = now.strftime('%Y-%m-%d %H:%M:%S')
     df_attendace_temp = pd.DataFrame(data={ "id"            : [id],
-                                            "visitor_name"  : [name],
-                                            "Timing"        : [dtString]
+                                            "nombre_visitante"  : [name],
+                                            "Tiempo"        : [dtString]
                                             })
 
     if not os.path.isfile(f_p):
@@ -82,14 +82,14 @@ def view_attendace():
     f_p = os.path.join(VISITOR_HISTORY, file_history)
     # st.write(f_p)
     df_attendace_temp = pd.DataFrame(columns=["id",
-                                              "visitor_name", "Timing"])
+                                              "nombre_visitante", "Tiempo"])
 
     if not os.path.isfile(f_p):
         df_attendace_temp.to_csv(f_p, index=False)
     else:
         df_attendace_temp = pd.read_csv(f_p)
 
-    df_attendace = df_attendace_temp.sort_values(by='Timing',
+    df_attendace = df_attendace_temp.sort_values(by='Tiempo',
                                                  ascending=False)
     df_attendace.reset_index(inplace=True, drop=True)
 
@@ -97,10 +97,10 @@ def view_attendace():
 
     if df_attendace.shape[0]>0:
         id_chk  = df_attendace.loc[0, 'id']
-        id_name = df_attendace.loc[0, 'visitor_name']
+        id_name = df_attendace.loc[0, 'nombre_visitante']
 
-        selected_img = st.selectbox('Search Image using ID',
-                                    options=['None']+list(df_attendace['id']))
+        selected_img = st.selectbox('Buscar imagen usando ID',
+                                    options=['Ninguno']+list(df_attendace['id']))
 
         avail_files = [file for file in list(os.listdir(VISITOR_HISTORY))
                        if ((file.endswith(tuple(allowed_image_type))) &
@@ -130,8 +130,8 @@ def crop_image_with_ratio(img, height,width,middle):
 
 ################################################### Defining Static Data ###############################################
 
-user_color      = '#000000'
-title_webapp    = "Face Recognition Attendance Sytem"
+user_color      = "#212264"
+title_webapp    = "Sistema de Reconocimiento Facial Para Data Center"
 
 html_temp = f"""
             <div style="background-color:{user_color};padding:12px">
@@ -141,7 +141,7 @@ html_temp = f"""
 st.markdown(html_temp, unsafe_allow_html=True)
 
 ###################### Defining Static Paths ###################4
-if st.sidebar.button('Click to Clear out all the data'):
+if st.sidebar.button('Clic para Reiniciar Base de Datos'):
     ## Clearing Visitor Database
     shutil.rmtree(VISITOR_DB, ignore_errors=True)
     os.mkdir(VISITOR_DB)
@@ -166,22 +166,38 @@ mtcnn = MTCNN(
 
 def main():
     ###################################################
-    st.sidebar.header("About")
-    st.sidebar.info("This webapp gives a demo of Attendance System"
-                    " using 'Face Recognition', 'Anti-spoof', and Streamlit")
+    st.sidebar.header("Sobre el Proyecto")
+    st.sidebar.info("Desarrollado por: Magdiel Alvarado \n\n"
+    "Proyecto: Demo de sistema de Control de Acceso para 'Data Center'")
+
+    st.sidebar.header("¿Como Funciona?")
+
+    st.sidebar.info("Captura: La cámara toma imágenes en tiempo real\n\n"
+    "Detección: OpenCV identifica rostros en el video\n\n"
+    "Anti-Spoofing: Verifica que sea un rostro real (no una foto)\n\n"
+    "Reconocimiento: Compara con rostros conocidos en la base de datos\n\n"
+    "Interfaz: Streamlit muestra los resultados de forma amigable")
+
+    st.sidebar.header("Principales Tecnologias Utilizadas")
+    st.sidebar.info("Reconocimiento Facial: Identifica y verifica rostros\n\n"
+     "Anti-spoof: Detecta intentos de fraude (fotos, videos o máscaras) \n\n"
+     "CV2/OpenCV: Biblioteca principal para procesamiento de imágenes y video \n\n"
+     "Streamlit: Framework para crear la interfaz web interactiva")
+    
+
     ###################################################
     selected_menu = option_menu(None,
-        ['Visitor Validation', 'View Visitor History', 'Add to Database'],
+        ['Validacion de Visitante', 'Ver historial de Visitantes', 'Agregar a la Base de Datos'],
         icons=['camera', "clock-history", 'person-plus'],
         ## icons from website: https://icons.getbootstrap.com/
         menu_icon="cast", default_index=0, orientation="horizontal")
 
-    if selected_menu == 'Visitor Validation':
+    if selected_menu == 'Validacion de Visitante':
         ## Generates a Random ID for image storage
         visitor_id = uuid.uuid1()
 
         ## Reading Camera Image
-        img_file_buffer = st.camera_input("Take a picture")
+        img_file_buffer = st.camera_input("Toma una Foto")
 
         if img_file_buffer is not None:
             bytes_data = img_file_buffer.getvalue()
@@ -197,7 +213,7 @@ def main():
             with open(os.path.join(VISITOR_HISTORY,
                                    f'{visitor_id}.jpg'), 'wb') as file:
                 file.write(img_file_buffer.getbuffer())
-                st.success('Image Saved Successfully!')
+                st.success('Imagen guardada correctamente!')
 
                 ## Validating Image
                 # Detect faces in the loaded image
@@ -242,18 +258,18 @@ def main():
                     col1, col2 = st.columns(2)
 
                     # select selected faces in the picture
-                    face_idxs = col1.multiselect("Select face#", can,
+                    face_idxs = col1.multiselect("Cara Seleccionada#", can,
                                                  default=can)
 
                     ## Filtering for similarity beyond threshold
-                    similarity_threshold = col2.slider('Select Threshold for Similarity',
+                    similarity_threshold = col2.slider('Seleccionar umbral de similitud',
                                                          min_value=0.0, max_value=3.0,
                                                          value=0.5)
                                                     ## check for similarity confidence greater than this threshold
 
                     flag_show = False
-                
-                    if ((col1.checkbox('Click to proceed!')) & (len(face_idxs)>0)):
+
+                    if ((col1.checkbox('Clic para continuar!')) & (len(face_idxs)>0)):
                         dataframe_new = pd.DataFrame()
                         for idx,loc in enumerate(face_locations) :
                             torch_loc = torch.stack([loc]).to(device)
@@ -316,44 +332,44 @@ def main():
                                     flag_show = True
 
                                 else:
-                                    st.error(f'No Match Found for the given Similarity Threshold! for face#{face_idx}')
-                                    st.info('Please Update the database for a new person or click again!')
+                                    st.error(f'¡No se encontró ninguna coincidencia para el umbral de similitud dado! para rostro#{face_idx}')
+                                    st.info('Por favor, actualice la base de datos para una nueva persona o haga clic nuevamente!')
                                     attendance(visitor_id, 'Unknown')
 
                         if flag_show == True:
                             st.image(BGR_to_RGB(image_array_copy), width=720)
 
                 else:
-                    st.error('No human face detected.')
+                    st.error('Cara no detectada.')
 
-    if selected_menu == 'View Visitor History':
+    if selected_menu == 'Ver historial de Visitantes':
         view_attendace()
 
-    if selected_menu == 'Add to Database':
+    if selected_menu == 'Agregar a la Base de Datos':
         col1, col2, col3 = st.columns(3)
 
-        face_name  = col1.text_input('Name:', '')
-        pic_option = col2.radio('Upload Picture',
-                                options=["Upload a Picture",
-                                         "Take a Picture with Cam"])
+        face_name  = col1.text_input('Nombre:', '')
+        pic_option = col2.radio('Subir Imagen',
+                                options=["Toma una Foto",
+                                         "Subir una Imagen"])
 
-        if pic_option == 'Upload a Picture':
-            img_file_buffer = col3.file_uploader('Upload a Picture',
+        if pic_option == 'Subir una Imagen':
+            img_file_buffer = col3.file_uploader('Subir una Imagen',
                                                  type=allowed_image_type)
             if img_file_buffer is not None:
                 # To read image file buffer with OpenCV:
                 file_bytes = np.asarray(bytearray(img_file_buffer.read()),
                                         dtype=np.uint8)
 
-        elif pic_option == 'Take a Picture with Cam':
-            img_file_buffer = col3.camera_input("Take a Picture with Cam")
+        elif pic_option == 'Toma una Foto':
+            img_file_buffer = col3.camera_input("Toma una Foto")
             if img_file_buffer is not None:
                 # To read image file buffer with OpenCV:
                 file_bytes = np.frombuffer(img_file_buffer.getvalue(),
                                            np.uint8)
 
         if ((img_file_buffer is not None) & (len(face_name) > 1) &
-                st.button('Click to Save!')):
+                st.button('Clic para guardar!')):
             # convert image from opened file to np.array
             image_array = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
             # st.write(image_array)
@@ -362,7 +378,7 @@ def main():
             with open(os.path.join(VISITOR_DB,
                                    f'{face_name}.jpg'), 'wb') as file:
                 file.write(img_file_buffer.getbuffer())
-                # st.success('Image Saved Successfully!')
+                # st.success('Imagen guardada correctamente!')
 
             face_locations ,prob = mtcnn(image_array,return_prob=True)
             torch_loc = torch.stack([face_locations[0]]).to(device)
